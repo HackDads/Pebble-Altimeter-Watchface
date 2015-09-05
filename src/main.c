@@ -21,6 +21,8 @@ static TextLayer *uptime_text_layer;
 static TextLayer *altitude_text_layer;
 static AppTimer *altitude_timer;
 
+static TextLayer *time_layer;
+
 
 static void prv_availability_changed(SmartstrapServiceId service_id, bool available) {
   if (service_id != SERVICE_ID) {
@@ -144,13 +146,42 @@ static void window_load(Window *window) {
   text_layer_set_font(altitude_text_layer, fonts_get_system_font(FONT_KEY_BITHAM_42_BOLD));
   text_layer_set_text_alignment(altitude_text_layer, GTextAlignmentCenter);
   text_layer_set_text(altitude_text_layer, "*");
+  text_layer_set_background_color(altitude_text_layer, GColorVividCerulean);
   layer_add_child(window_get_root_layer(window), text_layer_get_layer(altitude_text_layer));
+
+  // current time
+  time_layer = text_layer_create(GRect(0, 90, 144, 36));
+  text_layer_set_font(time_layer, fonts_get_system_font(FONT_KEY_GOTHIC_28));
+  text_layer_set_text_alignment(time_layer, GTextAlignmentCenter);
+  text_layer_set_text(time_layer, "-");
+  text_layer_set_background_color(time_layer, GColorCobaltBlue);
+  layer_add_child(window_get_root_layer(window), text_layer_get_layer(time_layer));
+
+  
 }
 
 static void window_unload(Window *window) {
   text_layer_destroy(status_text_layer);
   text_layer_destroy(uptime_text_layer);
 }
+
+
+
+static void update_time(void) {
+  // Get a tm structure
+  time_t temp = time(NULL); 
+  struct tm *tick_time = localtime(&temp);
+
+  // TODO: fix buffer size
+  static char buffer[20];
+  strftime(buffer, 20, "%H:%M", tick_time);  
+  text_layer_set_text(time_layer, buffer);
+}
+
+static void tick_handler(struct tm *tick_time, TimeUnits units_changed) {
+  update_time();
+}
+
 
 static void init(void) {
   // setup window
@@ -177,6 +208,12 @@ static void init(void) {
 
   // update how high you are every 5 seconds vs. using events
   altitude_timer = app_timer_register(5 * 1000, (AppTimerCallback) altitude_timer_callback, NULL);
+
+  // Make sure the time is displayed from the start (before waiting for tick)
+  update_time();
+
+  // Register with TickTimerService
+  tick_timer_service_subscribe(MINUTE_UNIT, tick_handler);
 }
 
 static void deinit(void) {
