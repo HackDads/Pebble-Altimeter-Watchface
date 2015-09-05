@@ -6,12 +6,20 @@ static const size_t LED_ATTRIBUTE_LENGTH = 1;
 static const SmartstrapAttributeId UPTIME_ATTRIBUTE_ID = 0x0002;
 static const size_t UPTIME_ATTRIBUTE_LENGTH = 4;
 
+static const SmartstrapAttributeId ALTITUDE_ATTRIBUTE_ID = 0x0003;
+static const size_t ALTITUDE_ATTRIBUTE_LENGTH = 4;
+
 static SmartstrapAttribute *led_attribute;
 static SmartstrapAttribute *uptime_attribute;
+
+static SmartstrapAttribute *altitude_attribute;
 
 static Window *window;
 static TextLayer *status_text_layer;
 static TextLayer *uptime_text_layer;
+
+static TextLayer *altitude_text_layer;
+static AppTimer *altitude_timer;
 
 
 static void prv_availability_changed(SmartstrapServiceId service_id, bool available) {
@@ -30,9 +38,14 @@ static void prv_availability_changed(SmartstrapServiceId service_id, bool availa
 
 static void prv_did_read(SmartstrapAttribute *attr, SmartstrapResult result,
                          const uint8_t *data, size_t length) {
-  if (attr != uptime_attribute) {
+  APP_LOG(APP_LOG_LEVEL_DEBUG, "prv_did_read()");
+
+  /*
+  TODO: restore
+  if ((attr != uptime_attribute) & (attr != altitude_attribute)) {
     return;
   }
+  */
   if (result != SmartstrapResultOk) {
     APP_LOG(APP_LOG_LEVEL_ERROR, "Read failed with result %d", result);
     return;
@@ -42,9 +55,23 @@ static void prv_did_read(SmartstrapAttribute *attr, SmartstrapResult result,
     return;
   }
 
-  static char uptime_buffer[20];
-  snprintf(uptime_buffer, 20, "%u", (unsigned int)*(uint32_t *)data);
-  text_layer_set_text(uptime_text_layer, uptime_buffer);
+  if (attr == uptime_attribute) {
+    static char uptime_buffer[20];
+    snprintf(uptime_buffer, 20, "%u", (unsigned int)*(uint32_t *)data);
+    text_layer_set_text(uptime_text_layer, uptime_buffer);
+  }
+
+  APP_LOG(APP_LOG_LEVEL_DEBUG, "attr: %u", smartstrap_attribute_get_attribute_id(attr));
+
+  if (attr == altitude_attribute) {
+
+    APP_LOG(APP_LOG_LEVEL_DEBUG, "altitude_attribute!");
+    APP_LOG(APP_LOG_LEVEL_DEBUG, "data: %u", (unsigned int)*(uint32_t *)data);
+
+    static char altitude_buffer[20];
+    snprintf(altitude_buffer, 20, "high: %u", (unsigned int)*(uint32_t *)data);  
+    text_layer_set_text(altitude_text_layer, altitude_buffer);    
+  }
 }
 
 static void prv_notified(SmartstrapAttribute *attribute) {
@@ -74,6 +101,12 @@ static void prv_set_led_attribute(bool on) {
   }
 }
 
+static void altitude_timer_callback(void *data) {
+
+  smartstrap_attribute_read(altitude_attribute);
+
+  altitude_timer = app_timer_register(5 * 1000, (AppTimerCallback) altitude_timer_callback, NULL);
+}
 
 static void up_click_handler(ClickRecognizerRef recognizer, void *context) {
   prv_set_led_attribute(true);
@@ -104,6 +137,13 @@ static void window_load(Window *window) {
   text_layer_set_text_alignment(uptime_text_layer, GTextAlignmentCenter);
   text_layer_set_text(uptime_text_layer, "-");
   layer_add_child(window_get_root_layer(window), text_layer_get_layer(uptime_text_layer));
+
+  // text layer for showing how high you are RN
+  altitude_text_layer = text_layer_create(GRect(0, 100, 144, 40));
+  text_layer_set_font(altitude_text_layer, fonts_get_system_font(FONT_KEY_GOTHIC_28));
+  text_layer_set_text_alignment(altitude_text_layer, GTextAlignmentCenter);
+  text_layer_set_text(altitude_text_layer, "*");
+  layer_add_child(window_get_root_layer(window), text_layer_get_layer(altitude_text_layer));
 }
 
 static void window_unload(Window *window) {
@@ -132,12 +172,17 @@ static void init(void) {
   led_attribute = smartstrap_attribute_create(SERVICE_ID, LED_ATTRIBUTE_ID, LED_ATTRIBUTE_LENGTH);
   uptime_attribute = smartstrap_attribute_create(SERVICE_ID, UPTIME_ATTRIBUTE_ID,
                                                  UPTIME_ATTRIBUTE_LENGTH);
+  altitude_attribute = smartstrap_attribute_create(SERVICE_ID, ALTITUDE_ATTRIBUTE_ID, ALTITUDE_ATTRIBUTE_LENGTH);
+
+  // update how high you are every 5 seconds vs. using events
+  altitude_timer = app_timer_register(5 * 1000, (AppTimerCallback) altitude_timer_callback, NULL);
 }
 
 static void deinit(void) {
   window_destroy(window);
   smartstrap_attribute_destroy(led_attribute);
   smartstrap_attribute_destroy(uptime_attribute);
+  smartstrap_attribute_destroy(altitude_attribute);
 }
 
 int main(void) {
