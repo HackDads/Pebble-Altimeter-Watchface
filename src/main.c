@@ -153,6 +153,9 @@ static void prv_did_read(SmartstrapAttribute *attr, SmartstrapResult result,
     static char altitude_buffer[20];
     snprintf(altitude_buffer, 20, "%u", altitude_sample_avg);  
     text_layer_set_text(altitude_text_layer, altitude_buffer);    
+
+    // force canvas refresh to keep in sync with text
+    layer_mark_dirty(canvas_layer);
   }
 }
 
