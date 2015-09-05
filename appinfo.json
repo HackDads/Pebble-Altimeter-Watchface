@@ -1,8 +1,8 @@
 {
-  "uuid": "ddf1813a-940d-4fc1-9d19-c0b384ddd3c5",
-  "shortName": "Smartstrap Demo 2",
-  "longName": "Smartstrap Demo 2",
-  "companyName": "Pebble",
+  "uuid": "2C6B510F-AA73-4CF2-9347-E0446FA0F5AA",
+  "shortName": "Pebble Altimeter Watchface",
+  "longName": "Pebble Altimeter Watchface",
+  "companyName": "Hack Dads",
   "versionCode": 1,
   "versionLabel": "1.0",
   "sdkVersion": "3",
