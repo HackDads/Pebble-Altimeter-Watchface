@@ -34,6 +34,20 @@ static int altitude_delta = 0;
 static Layer *canvas_layer;
 
 
+static GPath *up_path_ptr = NULL;
+static const GPathInfo UP_PATH_INFO = {
+  .num_points = 3,
+  .points = (GPoint []) {{10, 40}, {72, 5}, {133, 40}}
+};
+
+static GPath *down_path_ptr = NULL;
+static const GPathInfo DOWN_PATH_INFO = {
+  .num_points = 3,
+  .points = (GPoint []) {{10, 108}, {72, 133}, {133, 108}}
+};
+// TODO: add rectangle to path too? or make "real" arrow even?
+
+
 static void prv_availability_changed(SmartstrapServiceId service_id, bool available) {
   if (service_id != SERVICE_ID) {
     return;
@@ -88,6 +102,9 @@ static void prv_did_read(SmartstrapAttribute *attr, SmartstrapResult result,
         altitude_samples[j] = current_altitude;
       }
       first_altitude_sample_index = false;
+
+      // no previous value to compare, so set equal initially
+      altitude_sample_previous = current_altitude;
     }
     else {
       // just write the one value as usual
@@ -113,7 +130,7 @@ static void prv_did_read(SmartstrapAttribute *attr, SmartstrapResult result,
 
     if (altitude_sample_previous > altitude_sample_avg) {
       // going down
-      //text_layer_set_background_color(altitude_text_layer, GColorJazzberryJam);
+      //text_layer_set_background_color(altitude_text_layer, GColorFolly);
       altitude_delta = -1;
 
     } else if (altitude_sample_previous < altitude_sample_avg) {
@@ -130,11 +147,6 @@ static void prv_did_read(SmartstrapAttribute *attr, SmartstrapResult result,
 
     // store value for comparison next time
     altitude_sample_previous = altitude_sample_avg;
-
-    // TODO: pre-set altitude_sample_previous on first ?
-
-
-    // TODO: add initial pre-population of all SAMPLES values to current on very first write?
 
 
     // TODO: fix buffer size
@@ -175,7 +187,7 @@ static void altitude_timer_callback(void *data) {
 
   smartstrap_attribute_read(altitude_attribute);
 
-  altitude_timer = app_timer_register(5 * 1000, (AppTimerCallback) altitude_timer_callback, NULL);
+  altitude_timer = app_timer_register(1 * 1000, (AppTimerCallback) altitude_timer_callback, NULL);
 }
 
 static void up_click_handler(ClickRecognizerRef recognizer, void *context) {
@@ -197,12 +209,25 @@ static void canvas_update_proc(Layer *this_layer, GContext *ctx) {
 
   if (altitude_delta > 0) {
     graphics_context_set_fill_color(ctx, GColorMediumSpringGreen);
+    graphics_fill_rect(ctx, GRect(10, 40, 144 - 20, 168 - 70), 0, GCornerNone);
+    
+    graphics_context_set_fill_color(ctx, GColorMediumSpringGreen);
+    gpath_draw_filled(ctx, up_path_ptr);
+    graphics_context_set_stroke_color(ctx, GColorMediumSpringGreen);
+    gpath_draw_outline(ctx, up_path_ptr);
+
   } else if (altitude_delta < 0) {
-    graphics_context_set_fill_color(ctx, GColorJazzberryJam);
+    graphics_context_set_fill_color(ctx, GColorFolly);
+    graphics_fill_rect(ctx, GRect(10, 10, 144 - 20, 168 - 70), 0, GCornerNone);
+
+    graphics_context_set_fill_color(ctx, GColorFolly);
+    gpath_draw_filled(ctx, down_path_ptr);
+    graphics_context_set_stroke_color(ctx, GColorFolly);
+    gpath_draw_outline(ctx, down_path_ptr);
   } else {
     graphics_context_set_fill_color(ctx, GColorChromeYellow);
+    graphics_fill_rect(ctx, GRect(10, 25, 144 - 20, 168 - 70), 0, GCornerNone);
   }
-  graphics_fill_rect(ctx, GRect(10, 10, 144 - 20, 168 - 40), 0, GCornerNone);
 }
 
 
@@ -237,7 +262,7 @@ static void window_load(Window *window) {
   layer_add_child(window_get_root_layer(window), text_layer_get_layer(uptime_text_layer));
 
   // text layer for showing how high you are RN
-  altitude_text_layer = text_layer_create(GRect(0, (168 / 2) - 20 - (50 / 2), 144, 50));
+  altitude_text_layer = text_layer_create(GRect(0, (168 / 2) - 20 - (50 / 2) - 5, 144, 50));
   text_layer_set_font(altitude_text_layer, fonts_get_system_font(FONT_KEY_BITHAM_42_BOLD));
   text_layer_set_text_alignment(altitude_text_layer, GTextAlignmentCenter);
   text_layer_set_text(altitude_text_layer, "*");
@@ -246,7 +271,7 @@ static void window_load(Window *window) {
   layer_add_child(window_get_root_layer(window), text_layer_get_layer(altitude_text_layer));
 
   // current time
-  time_layer = text_layer_create(GRect(0, 90, 144, 36));
+  time_layer = text_layer_create(GRect(0, 80 - 5, 144, 36));
   text_layer_set_font(time_layer, fonts_get_system_font(FONT_KEY_GOTHIC_28));
   text_layer_set_text_alignment(time_layer, GTextAlignmentCenter);
   text_layer_set_text(time_layer, "-");
@@ -254,6 +279,11 @@ static void window_load(Window *window) {
   text_layer_set_background_color(time_layer, GColorClear);
   layer_add_child(window_get_root_layer(window), text_layer_get_layer(time_layer));
   
+
+  // path setup(s)
+  up_path_ptr = gpath_create(&UP_PATH_INFO);
+  down_path_ptr = gpath_create(&DOWN_PATH_INFO);
+
 }
 
 static void window_unload(Window *window) {
@@ -302,8 +332,8 @@ static void init(void) {
                                                  UPTIME_ATTRIBUTE_LENGTH);
   altitude_attribute = smartstrap_attribute_create(SERVICE_ID, ALTITUDE_ATTRIBUTE_ID, ALTITUDE_ATTRIBUTE_LENGTH);
 
-  // update how high you are every 5 seconds vs. using events
-  altitude_timer = app_timer_register(5 * 1000, (AppTimerCallback) altitude_timer_callback, NULL);
+  // update how high you are every 1 second(s) vs. using events
+  altitude_timer = app_timer_register(1 * 1000, (AppTimerCallback) altitude_timer_callback, NULL);
 
   // Make sure the time is displayed from the start (before waiting for tick)
   update_time();
