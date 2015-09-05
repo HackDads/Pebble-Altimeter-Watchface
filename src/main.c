@@ -108,12 +108,15 @@ static void prv_did_read(SmartstrapAttribute *attr, SmartstrapResult result,
     }
     else {
       // just write the one value as usual
-      altitude_samples[altitude_sample_index] = current_altitude;
+      altitude_samples[altitude_sample_index] = (unsigned int)*(uint32_t *)data;//current_altitude;
       altitude_sample_index++;
 
       // start over at end of buffer
+      // * * * INTENTIONALLY BREAK PEBBLE BY OVERRUNNING ARRAY! * * *
+      /*
       if (altitude_sample_index > 9)
           altitude_sample_index = 0;
+          */
     }
     
 
