@@ -1,5 +1,7 @@
 #include <pebble.h>
 
+#define SAMPLES 10
+
 static const SmartstrapServiceId SERVICE_ID = 0x1001;
 static const SmartstrapAttributeId LED_ATTRIBUTE_ID = 0x0001;
 static const size_t LED_ATTRIBUTE_LENGTH = 1;
@@ -22,6 +24,10 @@ static TextLayer *altitude_text_layer;
 static AppTimer *altitude_timer;
 
 static TextLayer *time_layer;
+
+static int altitude_samples[SAMPLES];
+static int altitude_sample_index = 0;
+
 
 
 static void prv_availability_changed(SmartstrapServiceId service_id, bool available) {
@@ -70,8 +76,30 @@ static void prv_did_read(SmartstrapAttribute *attr, SmartstrapResult result,
     APP_LOG(APP_LOG_LEVEL_DEBUG, "altitude_attribute!");
     APP_LOG(APP_LOG_LEVEL_DEBUG, "data: %u", (unsigned int)*(uint32_t *)data);
 
+    int current_altitude = (unsigned int)*(uint32_t *)data;
+    altitude_samples[altitude_sample_index] = current_altitude;
+    altitude_sample_index++;
+    // start over at end of buffer
+    if (altitude_sample_index > 9)
+        altitude_sample_index = 0;
+
+
+    // calculate average
+    int altitude_sample_avg = 0;
+    for (int i = 0; i < SAMPLES; i++) {
+      altitude_sample_avg += altitude_samples[i];
+      APP_LOG(APP_LOG_LEVEL_DEBUG, "altitude_samples[%d]: %u", i, altitude_samples[i]);
+    }
+    altitude_sample_avg /= SAMPLES;
+
+    // TODO: compare to previous
+
+    // TODO: add initial pre-population of all SAMPLES values to current on very first write?
+
+
+    // TODO: fix buffer size
     static char altitude_buffer[20];
-    snprintf(altitude_buffer, 20, "%u", (unsigned int)*(uint32_t *)data);  
+    snprintf(altitude_buffer, 20, "%u", altitude_sample_avg);  
     text_layer_set_text(altitude_text_layer, altitude_buffer);    
   }
 }
