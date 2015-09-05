@@ -27,6 +27,8 @@ static TextLayer *time_layer;
 
 static int altitude_samples[SAMPLES];
 static int altitude_sample_index = 0;
+static bool first_altitude_sample_index = true;
+static int altitude_sample_previous = 0;
 
 
 
@@ -77,12 +79,24 @@ static void prv_did_read(SmartstrapAttribute *attr, SmartstrapResult result,
     APP_LOG(APP_LOG_LEVEL_DEBUG, "data: %u", (unsigned int)*(uint32_t *)data);
 
     int current_altitude = (unsigned int)*(uint32_t *)data;
-    altitude_samples[altitude_sample_index] = current_altitude;
-    altitude_sample_index++;
-    // start over at end of buffer
-    if (altitude_sample_index > 9)
-        altitude_sample_index = 0;
 
+    // on first read, fill the entire array with that value in order to not avg w/ 0
+    if (first_altitude_sample_index) {
+      for (int j = 0; j < SAMPLES; j++) {
+        altitude_samples[j] = current_altitude;
+      }
+      first_altitude_sample_index = false;
+    }
+    else {
+      // just write the one value as usual
+      altitude_samples[altitude_sample_index] = current_altitude;
+      altitude_sample_index++;
+
+      // start over at end of buffer
+      if (altitude_sample_index > 9)
+          altitude_sample_index = 0;
+    }
+    
 
     // calculate average
     int altitude_sample_avg = 0;
@@ -91,8 +105,29 @@ static void prv_did_read(SmartstrapAttribute *attr, SmartstrapResult result,
       APP_LOG(APP_LOG_LEVEL_DEBUG, "altitude_samples[%d]: %u", i, altitude_samples[i]);
     }
     altitude_sample_avg /= SAMPLES;
+    
+    APP_LOG(APP_LOG_LEVEL_DEBUG, "altitude_sample_previous: %u", altitude_sample_previous);
+    APP_LOG(APP_LOG_LEVEL_DEBUG, "altitude_sample_avg: %u", altitude_sample_avg);
 
-    // TODO: compare to previous
+    if (altitude_sample_previous > altitude_sample_avg) {
+      // going down
+      text_layer_set_background_color(altitude_text_layer, GColorJazzberryJam);
+
+    } else if (altitude_sample_previous < altitude_sample_avg) {
+      // going up
+      text_layer_set_background_color(altitude_text_layer, GColorMediumSpringGreen);
+
+    } else {
+      // no change
+      text_layer_set_background_color(altitude_text_layer, GColorVividCerulean);
+
+    }
+
+    // store value for comparison next time
+    altitude_sample_previous = altitude_sample_avg;
+
+    // TODO: pre-set altitude_sample_previous on first ?
+
 
     // TODO: add initial pre-population of all SAMPLES values to current on very first write?
 
@@ -174,7 +209,7 @@ static void window_load(Window *window) {
   text_layer_set_font(altitude_text_layer, fonts_get_system_font(FONT_KEY_BITHAM_42_BOLD));
   text_layer_set_text_alignment(altitude_text_layer, GTextAlignmentCenter);
   text_layer_set_text(altitude_text_layer, "*");
-  text_layer_set_background_color(altitude_text_layer, GColorVividCerulean);
+  text_layer_set_background_color(altitude_text_layer, GColorChromeYellow);
   layer_add_child(window_get_root_layer(window), text_layer_get_layer(altitude_text_layer));
 
   // current time
