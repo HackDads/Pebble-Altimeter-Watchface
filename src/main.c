@@ -69,7 +69,7 @@ static void prv_did_read(SmartstrapAttribute *attr, SmartstrapResult result,
     APP_LOG(APP_LOG_LEVEL_DEBUG, "data: %u", (unsigned int)*(uint32_t *)data);
 
     static char altitude_buffer[20];
-    snprintf(altitude_buffer, 20, "high: %u", (unsigned int)*(uint32_t *)data);  
+    snprintf(altitude_buffer, 20, "%u", (unsigned int)*(uint32_t *)data);  
     text_layer_set_text(altitude_text_layer, altitude_buffer);    
   }
 }
@@ -125,22 +125,23 @@ static void window_load(Window *window) {
   window_set_background_color(window, GColorWhite);
 
   // text layer for connection status
-  status_text_layer = text_layer_create(GRect(0, 0, 144, 40));
-  text_layer_set_font(status_text_layer, fonts_get_system_font(FONT_KEY_GOTHIC_28));
+  status_text_layer = text_layer_create(GRect(0, 148, 72, 20));
+  text_layer_set_font(status_text_layer, fonts_get_system_font(FONT_KEY_GOTHIC_14));
   text_layer_set_text_alignment(status_text_layer, GTextAlignmentCenter);
   layer_add_child(window_get_root_layer(window), text_layer_get_layer(status_text_layer));
   prv_availability_changed(SERVICE_ID, smartstrap_service_is_available(SERVICE_ID));
 
-  // text layer for showing the attribute
-  uptime_text_layer = text_layer_create(GRect(0, 60, 144, 40));
-  text_layer_set_font(uptime_text_layer, fonts_get_system_font(FONT_KEY_GOTHIC_28));
+  // text layer for showing the uptime attribute
+  uptime_text_layer = text_layer_create(GRect(72, 148, 72, 20));
+  text_layer_set_font(uptime_text_layer, fonts_get_system_font(FONT_KEY_GOTHIC_14));
   text_layer_set_text_alignment(uptime_text_layer, GTextAlignmentCenter);
   text_layer_set_text(uptime_text_layer, "-");
+  text_layer_set_background_color(uptime_text_layer, GColorCyan);
   layer_add_child(window_get_root_layer(window), text_layer_get_layer(uptime_text_layer));
 
   // text layer for showing how high you are RN
-  altitude_text_layer = text_layer_create(GRect(0, 100, 144, 40));
-  text_layer_set_font(altitude_text_layer, fonts_get_system_font(FONT_KEY_GOTHIC_28));
+  altitude_text_layer = text_layer_create(GRect(0, (168 / 2) - 20 - (50 / 2), 144, 50));
+  text_layer_set_font(altitude_text_layer, fonts_get_system_font(FONT_KEY_BITHAM_42_BOLD));
   text_layer_set_text_alignment(altitude_text_layer, GTextAlignmentCenter);
   text_layer_set_text(altitude_text_layer, "*");
   layer_add_child(window_get_root_layer(window), text_layer_get_layer(altitude_text_layer));

@@ -8,7 +8,7 @@
   "sdkVersion": "3",
   "targetPlatforms": ["basalt"],
   "watchapp": {
-    "watchface": false
+    "watchface": true
   },
   "appKeys": {
     "dummy": 0
