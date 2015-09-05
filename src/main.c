@@ -29,7 +29,9 @@ static int altitude_samples[SAMPLES];
 static int altitude_sample_index = 0;
 static bool first_altitude_sample_index = true;
 static int altitude_sample_previous = 0;
+static int altitude_delta = 0;
 
+static Layer *canvas_layer;
 
 
 static void prv_availability_changed(SmartstrapServiceId service_id, bool available) {
@@ -105,21 +107,24 @@ static void prv_did_read(SmartstrapAttribute *attr, SmartstrapResult result,
       APP_LOG(APP_LOG_LEVEL_DEBUG, "altitude_samples[%d]: %u", i, altitude_samples[i]);
     }
     altitude_sample_avg /= SAMPLES;
-    
+
     APP_LOG(APP_LOG_LEVEL_DEBUG, "altitude_sample_previous: %u", altitude_sample_previous);
     APP_LOG(APP_LOG_LEVEL_DEBUG, "altitude_sample_avg: %u", altitude_sample_avg);
 
     if (altitude_sample_previous > altitude_sample_avg) {
       // going down
-      text_layer_set_background_color(altitude_text_layer, GColorJazzberryJam);
+      //text_layer_set_background_color(altitude_text_layer, GColorJazzberryJam);
+      altitude_delta = -1;
 
     } else if (altitude_sample_previous < altitude_sample_avg) {
       // going up
-      text_layer_set_background_color(altitude_text_layer, GColorMediumSpringGreen);
+      //text_layer_set_background_color(altitude_text_layer, GColorMediumSpringGreen);
+      altitude_delta = 1;
 
     } else {
       // no change
-      text_layer_set_background_color(altitude_text_layer, GColorVividCerulean);
+      //text_layer_set_background_color(altitude_text_layer, GColorChromeYellow);
+      altitude_delta = 0;
 
     }
 
@@ -186,8 +191,35 @@ static void click_config_provider(void *context) {
   window_single_click_subscribe(BUTTON_ID_DOWN, down_click_handler);
 }
 
+
+static void canvas_update_proc(Layer *this_layer, GContext *ctx) {
+  GRect bounds = layer_get_bounds(this_layer);
+
+  if (altitude_delta > 0) {
+    graphics_context_set_fill_color(ctx, GColorMediumSpringGreen);
+  } else if (altitude_delta < 0) {
+    graphics_context_set_fill_color(ctx, GColorJazzberryJam);
+  } else {
+    graphics_context_set_fill_color(ctx, GColorChromeYellow);
+  }
+  graphics_fill_rect(ctx, GRect(10, 10, 144 - 20, 168 - 40), 0, GCornerNone);
+}
+
+
 static void window_load(Window *window) {
   window_set_background_color(window, GColorWhite);
+  
+
+  Layer *window_layer = window_get_root_layer(window);
+  GRect window_bounds = layer_get_bounds(window_layer);
+
+  // Create Layer
+  canvas_layer = layer_create(GRect(0, 0, window_bounds.size.w, window_bounds.size.h));
+  layer_add_child(window_layer, canvas_layer);
+
+  // Set the update_proc
+  layer_set_update_proc(canvas_layer, canvas_update_proc);
+
 
   // text layer for connection status
   status_text_layer = text_layer_create(GRect(0, 148, 72, 20));
@@ -209,7 +241,8 @@ static void window_load(Window *window) {
   text_layer_set_font(altitude_text_layer, fonts_get_system_font(FONT_KEY_BITHAM_42_BOLD));
   text_layer_set_text_alignment(altitude_text_layer, GTextAlignmentCenter);
   text_layer_set_text(altitude_text_layer, "*");
-  text_layer_set_background_color(altitude_text_layer, GColorChromeYellow);
+  //text_layer_set_background_color(altitude_text_layer, GColorRichBrilliantLavender);
+  text_layer_set_background_color(altitude_text_layer, GColorClear);
   layer_add_child(window_get_root_layer(window), text_layer_get_layer(altitude_text_layer));
 
   // current time
@@ -217,9 +250,9 @@ static void window_load(Window *window) {
   text_layer_set_font(time_layer, fonts_get_system_font(FONT_KEY_GOTHIC_28));
   text_layer_set_text_alignment(time_layer, GTextAlignmentCenter);
   text_layer_set_text(time_layer, "-");
-  text_layer_set_background_color(time_layer, GColorCobaltBlue);
+  //text_layer_set_background_color(time_layer, GColorCobaltBlue);
+  text_layer_set_background_color(time_layer, GColorClear);
   layer_add_child(window_get_root_layer(window), text_layer_get_layer(time_layer));
-
   
 }
 
