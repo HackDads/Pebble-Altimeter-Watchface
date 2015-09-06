@@ -172,7 +172,14 @@ static void prv_did_read(SmartstrapAttribute *attr, SmartstrapResult result,
     text_layer_set_text(altitude_text_layer, altitude_buffer);    
 
     // force canvas refresh to keep in sync with text
-    layer_mark_dirty(canvas_layer);
+    if (window_is_loaded(window)) {
+      layer_mark_dirty(canvas_layer);
+    }
+
+    // force canvas refresh to make graph dynamic
+    if (window_is_loaded(graph_window)) {
+      layer_mark_dirty(graph_canvas_layer);
+    }
   }
 }
 
