@@ -59,9 +59,8 @@ static GBitmap *splash_bitmap;
 static Window *graph_window;
 static AppTimer *graph_timer;
 static Layer *graph_canvas_layer;
-
-// TODO: remove
-static TextLayer *test_layer;
+static TextLayer *y_axis_max_layer;
+static TextLayer *y_axis_min_layer;
 
 
 
@@ -388,6 +387,25 @@ static void graph_canvas_update_proc(Layer *this_layer, GContext *ctx) {
       (140 / SAMPLES) - 2, (168 - 2) - graph_height), 0, GCornerNone);
     APP_LOG(APP_LOG_LEVEL_DEBUG, "height: %u", ((altitude_samples[i] * 164) / 15000));
   }
+
+  
+  // y-axis labels
+  y_axis_max_layer = text_layer_create(GRect(0, 0, 18, 18));
+  text_layer_set_font(y_axis_max_layer, fonts_get_system_font(FONT_KEY_GOTHIC_14));
+  text_layer_set_text_alignment(y_axis_max_layer, GTextAlignmentLeft);
+  text_layer_set_text(y_axis_max_layer, "15K");
+  text_layer_set_background_color(y_axis_max_layer, GColorRichBrilliantLavender);
+  //text_layer_set_background_color(y_axis_max_layer, GColorClear);
+  layer_add_child(this_layer, text_layer_get_layer(y_axis_max_layer));
+
+  y_axis_min_layer = text_layer_create(GRect(0, 168 - 18, 18, 18));
+  text_layer_set_font(y_axis_min_layer, fonts_get_system_font(FONT_KEY_GOTHIC_14));
+  text_layer_set_text_alignment(y_axis_min_layer, GTextAlignmentCenter);
+  text_layer_set_text(y_axis_min_layer, "0ft");
+  text_layer_set_background_color(y_axis_min_layer, GColorRichBrilliantLavender);
+  //text_layer_set_background_color(y_axis_min_layer, GColorClear);
+  layer_add_child(this_layer, text_layer_get_layer(y_axis_min_layer));
+
 }
 
 static void graph_window_load(Window *window) {
