@@ -383,7 +383,9 @@ static void graph_canvas_update_proc(Layer *this_layer, GContext *ctx) {
   for (int i = 0; i < SAMPLES; i++) {
     graphics_context_set_fill_color(ctx, GColorDukeBlue);
     // TODO: auto-scale graph?
-    graphics_fill_rect(ctx, GRect(2 + ((140 / SAMPLES) * i), 5, (140 / SAMPLES) - 2, 2 + ((altitude_samples[i] * 164) / 15000)), 0, GCornerNone);
+    int graph_height = (168 - 2) - ((altitude_samples[i] * 164) / 15000);
+    graphics_fill_rect(ctx, GRect(2 + ((140 / SAMPLES) * i), graph_height, 
+      (140 / SAMPLES) - 2, (168 - 2) - graph_height), 0, GCornerNone);
     APP_LOG(APP_LOG_LEVEL_DEBUG, "height: %u", ((altitude_samples[i] * 164) / 15000));
   }
 }
