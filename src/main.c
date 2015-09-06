@@ -58,6 +58,10 @@ static GBitmap *splash_bitmap;
 
 static Window *graph_window;
 static AppTimer *graph_timer;
+static Layer *graph_canvas_layer;
+
+// TODO: remove
+static TextLayer *test_layer;
 
 
 
@@ -364,6 +368,34 @@ static void splash_timer_callback(void *data) {
 }
 
 
+
+static void graph_canvas_update_proc(Layer *this_layer, GContext *ctx) {
+  GRect bounds = layer_get_bounds(this_layer);
+  
+  // TODO: move to own fn(s)/make more sensible
+  for (int i = 0; i < SAMPLES; i++) {
+    graphics_context_set_fill_color(ctx, GColorDukeBlue);
+    // TODO: auto-scale graph?
+    graphics_fill_rect(ctx, GRect(2 + ((140 / SAMPLES) * i), 5, (140 / SAMPLES) - 2, 2 + ((altitude_samples[i] * 164) / 15000)), 0, GCornerNone);
+    APP_LOG(APP_LOG_LEVEL_DEBUG, "height: %u", ((altitude_samples[i] * 164) / 15000));
+  }
+}
+
+static void graph_window_load(Window *window) {
+  Layer *window_layer = window_get_root_layer(window);
+  GRect window_bounds = layer_get_bounds(window_layer);
+
+
+  // Create Layer
+  graph_canvas_layer = layer_create(GRect(0, 0, window_bounds.size.w, window_bounds.size.h));
+  layer_add_child(window_layer, graph_canvas_layer);
+
+  // Set the update_proc
+  layer_set_update_proc(graph_canvas_layer, graph_canvas_update_proc);
+}
+
+
+
 static void init(void) {
   // setup window
   window = window_create();
@@ -377,6 +409,9 @@ static void init(void) {
 
   // create window for graph
   graph_window = window_create();
+  window_set_window_handlers(graph_window, (WindowHandlers) {
+    .load = graph_window_load,
+  });
 
   // setup smartstrap
   SmartstrapHandlers handlers = (SmartstrapHandlers) {
