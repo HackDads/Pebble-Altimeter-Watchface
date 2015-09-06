@@ -39,13 +39,13 @@ static Layer *canvas_layer;
 static GPath *up_path_ptr = NULL;
 static const GPathInfo UP_PATH_INFO = {
   .num_points = 3,
-  .points = (GPoint []) {{10, 40}, {72, 5}, {133, 40}}
+  .points = (GPoint []) {{5, 40}, {72, 5}, {138, 40}}
 };
 
 static GPath *down_path_ptr = NULL;
 static const GPathInfo DOWN_PATH_INFO = {
   .num_points = 3,
-  .points = (GPoint []) {{10, 108}, {72, 133}, {133, 108}}
+  .points = (GPoint []) {{5, 108}, {72, 133}, {138, 108}}
 };
 // TODO: add rectangle to path too? or make "real" arrow even?
 
@@ -225,7 +225,7 @@ static void canvas_update_proc(Layer *this_layer, GContext *ctx) {
 
   if (altitude_delta > 0) {
     graphics_context_set_fill_color(ctx, GColorMediumSpringGreen);
-    graphics_fill_rect(ctx, GRect(10, 40, 144 - 20, 168 - 70), 0, GCornerNone);
+    graphics_fill_rect(ctx, GRect(5, 40, 144 - 10, 168 - 70), 0, GCornerNone);
     
     graphics_context_set_fill_color(ctx, GColorMediumSpringGreen);
     gpath_draw_filled(ctx, up_path_ptr);
@@ -234,7 +234,7 @@ static void canvas_update_proc(Layer *this_layer, GContext *ctx) {
 
   } else if (altitude_delta < 0) {
     graphics_context_set_fill_color(ctx, GColorFolly);
-    graphics_fill_rect(ctx, GRect(10, 10, 144 - 20, 168 - 70), 0, GCornerNone);
+    graphics_fill_rect(ctx, GRect(5, 10, 144 - 10, 168 - 70), 0, GCornerNone);
 
     graphics_context_set_fill_color(ctx, GColorFolly);
     gpath_draw_filled(ctx, down_path_ptr);
@@ -242,7 +242,7 @@ static void canvas_update_proc(Layer *this_layer, GContext *ctx) {
     gpath_draw_outline(ctx, down_path_ptr);
   } else {
     graphics_context_set_fill_color(ctx, GColorChromeYellow);
-    graphics_fill_rect(ctx, GRect(10, 25, 144 - 20, 168 - 70), 0, GCornerNone);
+    graphics_fill_rect(ctx, GRect(5, 25, 144 - 10, 168 - 70), 0, GCornerNone);
   }
 }
 
