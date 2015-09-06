@@ -56,6 +56,10 @@ static BitmapLayer *splash_layer;
 static GBitmap *splash_bitmap;
 
 
+static Window *graph_window;
+static AppTimer *graph_timer;
+
+
 
 static void prv_availability_changed(SmartstrapServiceId service_id, bool available) {
   if (service_id != SERVICE_ID) {
@@ -243,6 +247,26 @@ static void canvas_update_proc(Layer *this_layer, GContext *ctx) {
 }
 
 
+static void graph_timer_callback(void *data) {
+  // hide graph after 10s
+  window_stack_pop(graph_window);
+}
+
+static void tap_handler(AccelAxisType axis, int32_t direction) {
+  // user shook or tapped Pebble (ignore axis/direction)
+
+  if (!window_is_loaded(graph_window)) {
+    // ignore if already loaded
+
+    window_stack_push(graph_window, true);
+
+    // kick off window-closing timer
+    graph_timer = app_timer_register(10 * 1000, (AppTimerCallback) graph_timer_callback, NULL);
+  }
+
+}
+
+
 static void window_load(Window *window) {
   window_set_background_color(window, GColorWhite);
   
@@ -305,6 +329,10 @@ static void window_load(Window *window) {
   up_path_ptr = gpath_create(&UP_PATH_INFO);
   down_path_ptr = gpath_create(&DOWN_PATH_INFO);
 
+
+  // Register with Tap Event Service
+  accel_tap_service_subscribe(tap_handler);
+
 }
 
 static void window_unload(Window *window) {
@@ -346,6 +374,9 @@ static void init(void) {
   });
   const bool animated = true;
   window_stack_push(window, animated);
+
+  // create window for graph
+  graph_window = window_create();
 
   // setup smartstrap
   SmartstrapHandlers handlers = (SmartstrapHandlers) {
